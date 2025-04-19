@@ -1,7 +1,8 @@
 import discord
 
 #Checklist 
-# Make a 
+# Make a
+# #Vert cocool 
 
 
 class Client(discord.Client):
@@ -20,4 +21,4 @@ intents.message_content = True
 
 
 client = Client(intents=intents)
-client.run('')
+client.run('MTM2MjMxNzAzMzkxMTYxOTYwNA.Gy-_2Z.Woug75I5lJYj_ZVVfX1bcBHJW6cwIdgjvafZZA')
