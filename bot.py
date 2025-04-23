@@ -25,4 +25,4 @@ intents.message_content = True
 
 
 client = Client(intents=intents)
-client.run('')
+client.run(BOT_TOKEN)
