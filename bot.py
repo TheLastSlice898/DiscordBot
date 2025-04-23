@@ -2,7 +2,8 @@ import discord
 from dotenv import *
 import os
 #Checklist 
-# Make a 
+# Make a
+# #Vert cocool 
 
 load_dotenv()
 
@@ -24,4 +25,4 @@ intents.message_content = True
 
 
 client = Client(intents=intents)
-client.run(BOT_TOKEN)
+client.run('')
