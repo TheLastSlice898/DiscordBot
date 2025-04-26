@@ -26,6 +26,35 @@ bot = commands.Bot(command_prefix='+',intents=intents)
 @bot.event
 async def on_ready():
     print(f'longged on as {bot.user}')
+    try:
+        print(supabase)
+    except:
+        print("An exception occurred")
+    for guild in bot.guilds:
+        try:
+            supabase.table('Discord_Bot_Settings').select('*').eq('guild_id',str(guild.id)).single().execute()
+        except Exception as e:
+            if e.__getattribute__('code') == 'PGRST116':
+                print(f'No settings found for {guild.name}!')
+                default_settings = {
+                    'guild_id':str(guild.id),
+                    'ping_user_on_levelup':False,
+                    'msg_in_channel':True,
+                }
+                try:
+                    supabase.table('Discord_Bot_Settings').insert(default_settings).execute()
+                except Exception as e:
+                    print(e)
+                else:
+                    print(f'Added Default Settings to {guild.name}')
+        else:
+            print(f'Found settings for {guild.name}')
+#This is the way that I check that the bot has all the settings for all the discord servers
+ 
+    
+#template for request 
+#response = supabase.table("Discord-Bot-XP").select("xp").eq("discord_id",discord_id).single().execute()
+
 
 @bot.command()
 async def rank(self):
