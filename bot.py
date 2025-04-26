@@ -10,6 +10,8 @@ from discord.abc import Messageable
 from discord.ext import commands
 from discord.ext.commands import Context
 from supabase import create_client
+
+
 #Checklist 
 #Make a
 ##Vert cocool 
@@ -67,7 +69,7 @@ async def rank(ctx):
     await ctx.send("I cant find shit pookie")
 
 @bot.command()
-async def setup(ctx: Context):
+async def levelping(ctx: Context):
     async with ctx.typing():
         await asyncio.sleep(1)
     msg = await ctx.send('Do you want the bot to ping on level up')
@@ -95,6 +97,9 @@ async def setup(ctx: Context):
             async with ctx.typing():
                     await asyncio.sleep(0.5)
             await ctx.send('Updated to Not send to users')
+
+@bot.command()
+async def XPChannel(ctx: Context):
     msg = await ctx.send('Do you want the bot to msg in the channel you have leveled in or msg in a dedicated channel,🟩 for message in the channel,🟥 for a dedicated channel  ')
     await msg.add_reaction('🟩')
     await msg.add_reaction('🟥')
@@ -114,7 +119,7 @@ async def setup(ctx: Context):
             await ctx.send('The bot will message in the channel')
         if user[0].emoji == '🟥':
             try:
-                supabase.table('Discord_Bot_Settings').update({'msg_in_channel': True}).eq('guild_id',ctx.guild.id).execute()
+                supabase.table('Discord_Bot_Settings').update({'msg_in_channel': False}).eq('guild_id',ctx.guild.id).execute()
             except Exception as e:
                 print(e)
             async with ctx.typing():
@@ -133,6 +138,7 @@ async def setup(ctx: Context):
                 if ctx.guild.get_channel(channel_id):
                     supabase.table('Discord_Bot_Settings').update({'xp_channel':channel_id}).eq('guild_id',ctx.guild.id).execute()
                     await ctx.send(f'Cool! I got <#{channel_id}>')
+                    await ctx.guild.get_channel(channel_id).send('I will make XP updates in this channel :O')
                 else:
                     await ctx.send('I could not find a channel with that ID ( ͡° ͜ʖ ͡°)')
             except asyncio.TimeoutError as e:
@@ -141,11 +147,13 @@ async def setup(ctx: Context):
                 await ctx.send('That was not a valid number ????')
             else:
                 pass
+@bot.command()
+async def ingnorechannels(ctx: Context):
     msg = await ctx.send('Do you want to any channels to have XP gain ignored')
     await msg.add_reaction('🟩')
     await msg.add_reaction('🟥')
     try:
-        user = await bot.wait_for('reaction_add', timeout=10.0)
+        user = await bot.wait_for('reaction_add', timeout=120.0)
     except asyncio.TimeoutError:
         await ctx.send('Sorry I didnt get a respose :(')
     else:
@@ -167,8 +175,9 @@ async def setup(ctx: Context):
                 def check_all_ids(data):
                     return all(data)
                 if check_all_ids(listofchecks):
-                    await ctx.send(f'Updated the list to {listofchannels}')
-                    supabase.table('Discord_Bot_Settings').update({'ignored_channels': channel_ids}).execute()
+                    await ctx.send(f'Updated the list to {','.join(listofchannels)}')
+                    supabase.table('Discord_Bot_Settings').update({'ignored_channels': channel_ids}).eq('guild_id',ctx.guild.id).execute()
+                    supabase.table('Discord_Bot_Settings').update({'is_setup':True}).eq('guild_id',ctx.guild.id).execute()
                 else:
                     await ctx.send('That wasnt a valid list')
             except asyncio.TimeoutError as e :
@@ -178,39 +187,66 @@ async def setup(ctx: Context):
                    
 
         if user[0].emoji == '🟥':
-            await ctx.send('Cool everything should be setup')
+
             supabase.table('Discord_Bot_Settings').update({'is_setup':True}).eq('guild_id',ctx.guild.id).execute()
 
-
-
-                
-
-
-
-
-        
-
+@bot.command()
+async def setup(ctx: Context):
+    await levelping(ctx)
+    await XPChannel(ctx)
+    await ingnorechannels(ctx)
+    await ctx.send('Cool everything is setup')
 
 @bot.event
 async def on_message(message: discord.Message):
-   #Check so that it doesnt 
-   if message.author == bot.user:
-       return
-   
-   if bot.user in message.mentions:
-      await message.add_reaction(":ferret_huh:1319980301874757643")
-   #if message.author.id == 251263598364459008:
-   #   if "fuck off" in message.content.lower():
-   #       async with message.channel.typing():
-   #            await asyncio.sleep(1)
-   #       await message.channel.send("ow okay il fuck off")
-   #       await shutdown_bot(message.channel)
-   #   else:   
-   #    await message.reply('Hey Slice')
-   else:
-        print(f"{message.author} sent {message.content}")
-        await bot.process_commands(message)
-
+    #Check so that it doesnt become recursive
+    if message.author == bot.user:
+        return
+    if message.author.bot:
+        return
+ ## cant do this until the bot is verified :()
+    user_id = message.author.id
+ 
+    try:
+        user_data = supabase.table('Discord-Bot-XP').select('*').eq('discord_id',user_id).eq('guild_id',message.guild.id).single().execute()
+    except Exception as e:
+        if e.__getattribute__('code') == 'PGRST116':
+            user_data = {
+                'guild_id':message.guild.id,
+                'discord_id':user_id,
+                'xp':0,
+                'lvl':1,
+                'time_since_xp':time.time_ns()
+            }
+            try:
+                supabase.table('Discord-Bot-XP').insert(user_data).execute()
+            except Exception as e:
+                print(e)
+            else:
+                print(f'User {message.author.name} was created')
+    else:
+        
+        current_time = time.time_ns()
+        previous_time_response = supabase.table('Discord-Bot-XP').select('time_since_xp').eq('discord_id',user_id).eq('guild_id',message.guild.id).execute()
+        previous_time_value = previous_time_response.data[0]['time_since_xp']
+        cooldown_response = supabase.table('Discord_Bot_Settings').select('cooldown').eq('guild_id',message.guild.id).single().execute()
+        cooldown_value = cooldown_response.data['cooldown']
+        cooldownns = cooldown_value*1000000000
+        if current_time - previous_time_value >= cooldownns:
+            old_xp_reponse = supabase.table('Discord-Bot-XP').select('xp').eq('discord_id',user_id).eq('guild_id',message.guild.id).execute()
+            old_xp_value = old_xp_reponse.data[0]['xp']
+            new_xp = old_xp_value + 20
+            currnetlevel_reponse = supabase.table('Discord-Bot-XP').select('lvl').eq('discord_id',user_id).eq('guild_id',message.guild.id).execute()
+            currentlevel_value = currnetlevel_reponse.data[0]['lvl']
+            if await CheckLevel(new_xp,currentlevel_value,message):
+                pass
+            else:
+                supabase.table('Discord-Bot-XP').update({
+                'xp':new_xp,
+                'time_since_xp':time.time_ns(),
+                'discord_name': message.author.display_name
+                }).eq('discord_id',message.author.id).eq('guild_id',message.guild.id).execute()
+    await bot.process_commands(message)
 
 
 async def shutdown_bot(ctx: discord.abc.Messageable):
@@ -218,22 +254,61 @@ async def shutdown_bot(ctx: discord.abc.Messageable):
     await bot.close()
 
 
+async def CheckLevel(currentxp: int,currentlvl: int, message: discord.Message):
+    growth_rate = 0.07
+    Multifplier = 1.12
+    
+    xpneeded = (currentlvl/growth_rate) ** Multifplier
+    if xpneeded <= currentxp:
+        leftoverxp = currentxp-xpneeded
+        leftoverxp = round(leftoverxp)
+        await LevelUp(leftoverxp, currentlvl+1,message)
+        return True
+    else:
+        return False
+    
+            
+async def LevelUp(leftoverxp: int,nextlvl: int,message: discord.Message):
+                try:
+                    supabase.table('Discord-Bot-XP').update({
+                'xp':leftoverxp,
+                'lvl':nextlvl,
+                'time_since_xp':time.time_ns(),
+                'discord_name': message.author.display_name
+                }).eq('discord_id',message.author.id).eq('guild_id',message.guild.id).execute()
+                except Exception as e:
+                    print(e)
+                
+                # define Level Up Message
+                try:
+                    user_data = supabase.table('Discord-Bot-XP').select('*').eq('discord_id',message.author.id).eq('guild_id',message.guild.id).single().execute()
+                except Exception as e:
+                    print(e)
+                else:  
+                    print(f'{message.author.display_name} is level {user_data.data['lvl']}')
+                    LvlUpMsgwithoutPing = f':tada: Congratualtions {message.author.display_name}, you are now Level {user_data.data['lvl']} :tada: '
+                    LvlUpMsgwithPing = f':tada: Congratouations <@{message.author.id}>, you are now level {user_data.data['lvl']} :tada: '
+                settingdata =  supabase.table('Discord_Bot_Settings').select('*').eq('guild_id',message.guild.id).execute()
+                pingonlevel = settingdata.data[0]['ping_user_on_levelup']
+                messageinchannel = settingdata.data[0]['msg_in_channel']
+                MSGChannel = message.channel
+                XPchannel = message.guild.get_channel(settingdata.data[0]['xp_channel'])
+                if messageinchannel:
+                    if pingonlevel:
+                        await MSGChannel.send(LvlUpMsgwithPing)
+                    else:
+                        await MSGChannel.send(LvlUpMsgwithoutPing)
+                else:
+                    if pingonlevel:
+                        await XPchannel.send(LvlUpMsgwithPing)
+                    else:
+                        await XPchannel.send(LvlUpMsgwithoutPing)
+
+
+
 @bot.command()
 @commands.is_owner()
 async def shutdown(ctx):
     await shutdown_bot(ctx)
 
-#discord_id = input("what ID you do want the xp for")
-
-
-
-#print(response.data["xp"])  
-
-#old client bot which is cringe ;3
-#class Client(discord.Client):
-#    async def on_ready(self):
-#        print(f'longged on as {self.user}')
-#
-#    async def on_message(self, message):
-#        print(f'message is from {message.author}: {message.content}')
 bot.run(BOT_TOKEN)
