@@ -72,7 +72,14 @@ async def rank(ctx: Context):
             lvl_value = user_data.data['lvl']
             xp_value = user_data.data['xp']
             rankstring = f'<@{ctx.author.id}>,You are level {lvl_value} and have {xp_value} XP'
+            nextlevel = f'{ctx.author.id}> You need {xpneeded(xp_value,lvl_value,ctx.message)} XP to Level up to {lvl_value+1}'
+    async with ctx.typing():
+        await asyncio.sleep(0.5)
     await ctx.send(f'{rankstring}')
+    async with ctx.typing():
+        await asyncio.sleep(0.5)
+    await ctx.sned(f'{nextlevel}')
+    
 
 @bot.command()
 async def leaderboard(ctx):
@@ -279,7 +286,13 @@ async def CheckLevel(currentxp: int,currentlvl: int, message: discord.Message):
     else:
         return False
     
-            
+async def xpneeded(currentxp: int,currentlvl: int, message: discord.Message):
+    growth_rate = 0.07
+    Multifplier = 1.12
+    
+    xpneeded = (currentlvl/growth_rate) ** Multifplier
+    return xpneeded
+    
 async def LevelUp(leftoverxp: int,nextlvl: int,message: discord.Message):
                 try:
                     supabase.table('Discord-Bot-XP').update({
