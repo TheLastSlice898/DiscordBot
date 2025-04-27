@@ -67,6 +67,7 @@ async def rank(ctx: Context):
             user_data = supabase.table('Discord-Bot-XP').select('*').eq('discord_id',ctx.author.id).eq('guild_id',ctx.guild.id).single().execute()
         except Exception as e:
             print(e)
+            await ctx.send("I cant find shit pookie")
         else:
             lvl_value = user_data.data['lvl']
             xp_value = user_data.data['xp']
@@ -76,7 +77,6 @@ async def rank(ctx: Context):
 
     async with ctx.typing():
         await asyncio.sleep(2)
-    await ctx.send("I cant find shit pookie")
 
 @bot.command()
 async def leaderboard(ctx):
