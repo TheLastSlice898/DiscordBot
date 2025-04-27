@@ -71,12 +71,8 @@ async def rank(ctx: Context):
         else:
             lvl_value = user_data.data['lvl']
             xp_value = user_data.data['xp']
-            rankstring = f'<@{ctx.author.id}>,You are level {lvl_value} and have {xp_value}'
+            rankstring = f'<@{ctx.author.id}>,You are level {lvl_value} and have {xp_value} XP'
     await ctx.send(f'{rankstring}')
-
-
-    async with ctx.typing():
-        await asyncio.sleep(2)
 
 @bot.command()
 async def leaderboard(ctx):
