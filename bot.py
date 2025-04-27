@@ -55,18 +55,33 @@ async def on_ready():
         else:
             print(f'Found settings for {guild.name}')
 #This is the way that I check that the bot has all the settings for all the discord servers
- 
-    
 #template for request 
 #response = supabase.table("Discord-Bot-XP").select("xp").eq("discord_id",discord_id).single().execute()
 
 
 @bot.command()
-async def rank(ctx):
-    #wait 2 sec
+async def rank(ctx: Context):
+    async with ctx.typing():
+        await asyncio.sleep(1)
+        try:
+            user_data = supabase.table('Discord-Bot-XP').select('*').eq('discord_id',ctx.author.id).eq('guild_id',ctx.guild.id).single().execute()
+        except Exception as e:
+            print(e)
+        else:
+            lvl_value = user_data.data['lvl']
+            xp_value = user_data.data['xp']
+            rankstring = f'<@{ctx.author.id}>,You are level {lvl_value} and have {xp_value}'
+    await ctx.send(f'{rankstring}')
+
+
     async with ctx.typing():
         await asyncio.sleep(2)
     await ctx.send("I cant find shit pookie")
+
+@bot.command()
+async def leaderboard(ctx):
+    #to do later for funzies :3
+    pass
 
 @bot.command()
 async def levelping(ctx: Context):
@@ -244,7 +259,7 @@ async def on_message(message: discord.Message):
                 supabase.table('Discord-Bot-XP').update({
                 'xp':new_xp,
                 'time_since_xp':time.time_ns(),
-                'discord_name': message.author.display_name
+                'discord_name': message.author.name
                 }).eq('discord_id',message.author.id).eq('guild_id',message.guild.id).execute()
     await bot.process_commands(message)
 
