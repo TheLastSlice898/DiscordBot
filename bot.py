@@ -225,6 +225,7 @@ async def on_message(message: discord.Message):
             user_data = {
                 'guild_id':message.guild.id,
                 'discord_id':user_id,
+                'discord_name':message.author.display_name,
                 'xp':0,
                 'lvl':1,
                 'time_since_xp':time.time_ns()
