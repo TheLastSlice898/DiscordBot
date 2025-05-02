@@ -55,7 +55,7 @@ async def on_ready():
 #template for request 
 #response = supabase.table("Discord-Bot-XP").select("xp").eq("discord_id",discord_id).single().execute()
 
-@bot.event()
+@bot.event
 async def on_guild_join(guild: discord.Guild):
     print(f'Bot has join {guild.name}')
     try: 
