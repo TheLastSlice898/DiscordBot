@@ -66,7 +66,7 @@ async def on_guild_join(guild: discord.Guild):
             default_settings = {
                 'guild_id':str(guild.id),
                 'ping_user_on_levelup':False,
-                'msg_in_channl':True,
+                'msg_in_channel':True,
                 'is_setup':False,
                 'cooldown':3
             }
