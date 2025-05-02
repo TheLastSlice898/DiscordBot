@@ -11,23 +11,20 @@ from discord.ext import commands
 from discord.ext.commands import Context
 from supabase import create_client
 
-
-#Checklist 
-#Make a
-##Vert cocool 
-
+#Grab .env Variables
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 BOT_ID = os.getenv("DISCORD_APPLICATION_ID")
 url: str = os.getenv("SUPABASE_URL")
 key: str = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
-sen_ID = 1184811030807846972
+
 #intialisation of the bot perms
 intents = intents=discord.Intents.default()
 intents.message_content = True
 #Create Bot Class
 bot = commands.Bot(command_prefix='+',intents=intents)
 
+#On Ready is the itilisation of the bot
 @bot.event
 async def on_ready():
     print(f'longged on as {bot.user}')
@@ -58,6 +55,33 @@ async def on_ready():
 #template for request 
 #response = supabase.table("Discord-Bot-XP").select("xp").eq("discord_id",discord_id).single().execute()
 
+@bot.event()
+async def on_guild_join(guild: discord.Guild):
+    print(f'Bot has join {guild.name}')
+    try: 
+        supabase.table('Discord_Bot_Settings').select('*').eq('guild_id',str(guild.id)).single().execute() 
+    except Exception as e:
+        if e.__getattribute__('code') == 'PGRST116':
+            print (f'No settings found of {guild.name}')
+            default_settings = {
+                'guild_id':str(guild.id),
+                'ping_user_on_levelup':False,
+                'msg_in_channl':True,
+                'is_setup':False,
+                'cooldown':3
+            }
+            try: 
+                supabase.table('Discord_Bot_Settings').insert(default_settings).execute()
+            except Exception as e:
+                print(e)
+            else:
+                print(f'Added Default Settings for {guild.name}')
+    else:
+        print(f'Found Settings for {guild.name}')
+
+
+
+
 
 @bot.command()
 async def rank(ctx: Context):
@@ -72,13 +96,13 @@ async def rank(ctx: Context):
             lvl_value = user_data.data['lvl']
             xp_value = user_data.data['xp']
             rankstring = f'<@{ctx.author.id}>,You are level {lvl_value} and have {xp_value} XP'
-            nextlevel = f'{ctx.author.id}> You need {xpneeded(xp_value,lvl_value,ctx.message)} XP to Level up to {lvl_value+1}'
+            nextlevel = f'{ctx.author.id}> You need {await xpneeded(xp_value,lvl_value,ctx.message)} XP to Level up to {lvl_value+1}'
     async with ctx.typing():
         await asyncio.sleep(0.5)
     await ctx.send(f'{rankstring}')
     async with ctx.typing():
         await asyncio.sleep(0.5)
-    await ctx.sned(f'{nextlevel}')
+    await ctx.send(f'{nextlevel}')
     
 
 @bot.command()
@@ -166,7 +190,7 @@ async def XPChannel(ctx: Context):
             else:
                 pass
 @bot.command()
-async def ingnorechannels(ctx: Context):
+async def ignorechannels(ctx: Context):
     msg = await ctx.send('Do you want to any channels to have XP gain ignored')
     await msg.add_reaction('🟩')
     await msg.add_reaction('🟥')
@@ -212,7 +236,7 @@ async def ingnorechannels(ctx: Context):
 async def setup(ctx: Context):
     await levelping(ctx)
     await XPChannel(ctx)
-    await ingnorechannels(ctx)
+    await ignorechannels(ctx)
     await ctx.send('Cool everything is setup')
 
 @bot.event
