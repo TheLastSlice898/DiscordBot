@@ -337,8 +337,8 @@ async def LevelUp(leftoverxp: int,nextlvl: int,message: discord.Message):
                     print(e)
                 else:  
                     print(f'{message.author.display_name} is level {user_data.data['lvl']}')
-                    LvlUpMsgwithoutPing = f':tada: Congratualtions {message.author.display_name}, you are now Level {user_data.data['lvl']} :tada: '
-                    LvlUpMsgwithPing = f':tada: Congratouations <@{message.author.id}>, you are now level {user_data.data['lvl']} :tada: '
+                    LvlUpMsgwithoutPing = f':tada: COngrtuiatliaons {message.author.display_name}, you are now ḷ̷͔̥͊̒ë̸̢͕̰̥̗́͂̀̑̕v̵̤̀̊͑͑̂̄́e̴͍̒͋l̸̜̭̦̬͙͔͍͕̆̆̕͘͝ {user_data.data['lvl']} :tada: '
+                    LvlUpMsgwithPing = f':tada: Conbtragations <@{message.author.id}>, you are now ĺ̵̥̜e̵͔̼̽v̵̼̈́e̸͈̎̚l̶̛̠̼̊ {user_data.data['lvl']} :tada: '
                 settingdata =  supabase.table('Discord_Bot_Settings').select('*').eq('guild_id',message.guild.id).execute()
                 pingonlevel = settingdata.data[0]['ping_user_on_levelup']
                 messageinchannel = settingdata.data[0]['msg_in_channel']
