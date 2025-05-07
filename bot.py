@@ -96,7 +96,9 @@ async def rank(ctx: Context):
             lvl_value = user_data.data['lvl']
             xp_value = user_data.data['xp']
             rankstring = f'<@{ctx.author.id}>,You are level {lvl_value} and have {xp_value} XP'
-            nextlevel = f'{ctx.author.id}> You need {await xpneeded(xp_value,lvl_value,ctx.message)} XP to Level up to {lvl_value+1}'
+            xpneeded_value = await xpneeded(xp_value,lvl_value,ctx.message)
+            xpneeded_value_round = int(round(xpneeded_value))
+            nextlevel = f'<@{ctx.author.id}> You need {xpneeded_value_round} XP to Level up to Level {lvl_value+1}'
     async with ctx.typing():
         await asyncio.sleep(0.5)
     await ctx.send(f'{rankstring}')
