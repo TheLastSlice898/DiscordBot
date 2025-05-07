@@ -1,6 +1,7 @@
 from dotenv import *
 load_dotenv()
 import json
+import random
 import asyncio
 import requests
 import os
@@ -111,6 +112,15 @@ async def rank(ctx: Context):
 async def leaderboard(ctx):
     #to do later for funzies :3
     pass
+
+
+@bot.command()
+@commands.is_owner()
+async def forcelevelup(ctx: Context):
+    user_id = ctx.author.id
+    currentuserlevel_reposne = supabase.table('Discord-Bot-XP').select('lvl').eq('discord_id',user_id).eq('guild_id',ctx.guild.id).single().execute()
+    currentuserlevel_reposne_value = currentuserlevel_reposne.data['lvl']
+    await LevelUp(0,currentuserlevel_reposne_value,ctx.message)
 
 @bot.command()
 async def levelping(ctx: Context):
@@ -299,6 +309,8 @@ async def shutdown_bot(ctx: discord.abc.Messageable):
     await bot.close()
 
 
+
+
 async def CheckLevel(currentxp: int,currentlvl: int, message: discord.Message):
     growth_rate = 0.07
     Multifplier = 1.12
@@ -336,9 +348,40 @@ async def LevelUp(leftoverxp: int,nextlvl: int,message: discord.Message):
                 except Exception as e:
                     print(e)
                 else:  
+                    caseinput = random.randint(0,8)
+                    match caseinput:
+                        case 0:
+                            LvlUpMsgwithoutPing = f':tada: COngrtuiatliaons {message.author.display_name}, y0u a3e nov ḷ̷͔̥͊̒ë̸̢͕̰̥̗́͂̀̑̕v̵̤̀̊͑͑̂̄́e̴͍̒͋l̸̜̭̦̬͙͔͍͕̆̆̕͘͝ {user_data.data['lvl']} :tada: '
+                            LvlUpMsgwithPing = f':tada: Conbtragations <@{message.author.id}>, 3ou ar3 n0w ĺ̵̥̜e̵͔̼̽v̵̼̈́e̸͈̎̚l̶̛̠̼̊ {user_data.data['lvl']} :tada: '
+                        case 1:
+                            LvlUpMsgwithoutPing = f'Good job {message.author.display_name}, You did it, you just leveled up, how do you feel? Do you feel any more worth do you feel that you have done anything with this new power. I hope it does...Also you are now level {user_data.data['lvl']} :unamused:'
+                            LvlUpMsgwithPing = f'Good job <@{message.author.id}>, You did it, you just leveled up, how do you feel, Do you feel? any more worth do you feel that you have done anything with this new power. I hope it does...Also you are now level {user_data.data['lvl']} :unamused:'
+                        case 2:
+                            LvlUpMsgwithoutPing = f"HOLY FUCKING SHIT, THIS MF JUST LEVEL UP TO THE BIG OL VALUE OF **{user_data.data['lvl']}** HOPE Y'ALL ARE READY FOR :fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire: > {message.author.display_name} < :fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire:"
+                            LvlUpMsgwithPing = f'''HOLY FUCKING SHIT, THIS MF JUST LEVEL UP TO THE BIG OL VALUE OF {user_data.data['lvl']} HOPE Y'AL ARE READY FOR :fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire:  > <@{message.author.id}> < :fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire::fire:'''
+                        case 3:
+                            LvlUpMsgwithoutPing = f'{message.author.display_name},{user_data.data['lvl']}'
+                            LvlUpMsgwithPing = f'<@{message.author.id}>,{user_data.data['lvl']}'
+                        case 4:
+                            LvlUpMsgwithoutPing = f'Daum FR {message.author.display_name} ,Level {user_data.data['lvl']}'
+                            LvlUpMsgwithPing = f'Daum FR <@{message.author.id}>,Level {user_data.data['lvl']}'
+                        case 5:
+                            LvlUpMsgwithoutPing = f':tada: Congratuations {message.author.display_name}, you are now Level {user_data.data['lvl']} :tada:'
+                            LvlUpMsgwithPing = f':tada: Congratuations <@{message.author.id}>, you are now Level {user_data.data['lvl']} :tada:'
+                        case 6:
+                            LvlUpMsgwithoutPing = f'Someone has Leveled up....(also what do I do with this {user_data.data['lvl']})'
+                            LvlUpMsgwithPing = f'Someone has Leveled up....(also what do I do with this {user_data.data['lvl']})'
+                        case 7:
+                            LvlUpMsgwithoutPing_normal = f':adat:  Congratuations {message.author.display_name}, you are now Level {user_data.data['lvl']} :adat: '
+                            LvlUpMsgwithoutPing = LvlUpMsgwithoutPing_normal[::-1]
+                            LvlUpMsgwithPing_normal = f':adat:  Congratuations <@{message.author.id}>, you are now Level  :adat: '
+                            LvlUpMsgwithPing = LvlUpMsgwithPing_normal[::-1]
+                        case 8:
+                            LvlUpMsgwithoutPing = f':tada: Congratuations {user_data.data['lvl']}, you are now Level {message.author.display_name} :tada:'
+                            LvlUpMsgwithPing = f':tada: Congratuations {user_data.data['lvl']}, you are now Level <@{message.author.id}> :tada:'
                     print(f'{message.author.display_name} is level {user_data.data['lvl']}')
-                    LvlUpMsgwithoutPing = f':tada: COngrtuiatliaons {message.author.display_name}, you are now ḷ̷͔̥͊̒ë̸̢͕̰̥̗́͂̀̑̕v̵̤̀̊͑͑̂̄́e̴͍̒͋l̸̜̭̦̬͙͔͍͕̆̆̕͘͝ {user_data.data['lvl']} :tada: '
-                    LvlUpMsgwithPing = f':tada: Conbtragations <@{message.author.id}>, you are now ĺ̵̥̜e̵͔̼̽v̵̼̈́e̸͈̎̚l̶̛̠̼̊ {user_data.data['lvl']} :tada: '
+                    #LvlUpMsgwithoutPing = f':tada: COngrtuiatliaons {message.author.display_name}, you are now ḷ̷͔̥͊̒ë̸̢͕̰̥̗́͂̀̑̕v̵̤̀̊͑͑̂̄́e̴͍̒͋l̸̜̭̦̬͙͔͍͕̆̆̕͘͝ {user_data.data['lvl']} :tada: '
+                    #LvlUpMsgwithPing = f':tada: Conbtragations <@{message.author.id}>, you are now ĺ̵̥̜e̵͔̼̽v̵̼̈́e̸͈̎̚l̶̛̠̼̊ {user_data.data['lvl']} :tada: '
                 settingdata =  supabase.table('Discord_Bot_Settings').select('*').eq('guild_id',message.guild.id).execute()
                 pingonlevel = settingdata.data[0]['ping_user_on_levelup']
                 messageinchannel = settingdata.data[0]['msg_in_channel']
