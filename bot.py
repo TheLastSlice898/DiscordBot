@@ -8,6 +8,7 @@ import os
 import io
 import time
 import discord
+import zoneinfo
 from discord.abc import Messageable
 from discord.ext import commands
 from discord.ext.commands import Context
@@ -354,8 +355,15 @@ async def on_message(message: discord.Message):
 async def sol(ctx):
     try:
         async with aiohttp.ClientSession() as session:
-            currentdate=datetime.today().strftime('%Y-%m-%d')
+            #get MF AUSSIE TIME!
+            timezone = zoneinfo('Australia/Sydney')
+            #get the datetime in aus
+            now = datetime.now(timezone)
+            #FORMATE THAT MF
+            currentdate=now.strftime('%Y-%m-%d')
+            
             url=f'https://www.nytimes.com/svc/wordle/v2/{currentdate}.json'
+            print(url)
             async with session.get(url) as resp:
                 if resp.status != 200:
                     await ctx.send(url)
