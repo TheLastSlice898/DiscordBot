@@ -1,10 +1,11 @@
 from dotenv import *
 load_dotenv()
-import json
 import random
 import asyncio
-import requests
+import aiohttp
+from datetime import datetime
 import os
+import io
 import time
 import discord
 from discord.abc import Messageable
@@ -20,7 +21,8 @@ key: str = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
 #intialisation of the bot perms
-intents = intents=discord.Intents.default()
+intents = intents=discord.Intents.all()
+intents.members = True
 intents.message_content = True
 #Create Bot Class
 bot = commands.Bot(command_prefix='+',intents=intents)
@@ -29,6 +31,7 @@ bot = commands.Bot(command_prefix='+',intents=intents)
 @bot.event
 async def on_ready():
     print(f'longged on as {bot.user}')
+    await bot.tree.sync()
     try:
         print(supabase)
     except:
@@ -55,6 +58,14 @@ async def on_ready():
 #This is the way that I check that the bot has all the settings for all the discord servers
 #template for request 
 #response = supabase.table("Discord-Bot-XP").select("xp").eq("discord_id",discord_id).single().execute()
+
+@bot.tree.command(name='ping',description='Replies with a ping and time!')
+async def ping(inter: discord.Interaction):
+    start_time = time.perf_counter()
+    await inter.response.defer()
+    end_time = time.perf_counter()
+    duration = (end_time - start_time) * 1000
+    await inter.followup.send(f'pong ! response time:{duration:.2f}ms')
 
 @bot.event
 async def on_guild_join(guild: discord.Guild):
@@ -151,6 +162,41 @@ async def levelping(ctx: Context):
             async with ctx.typing():
                     await asyncio.sleep(0.5)
             await ctx.send('Updated to Not send to users')
+
+@bot.command()
+async def wordlesetup(ctx: Context):
+    async with ctx.typing():
+        await asyncio.sleep(0.5)
+
+    await ctx.send("What **role** should I give users when they guess the Wordle correctly?\n"
+                   "Please type the **role name**, mention it, or paste its ID:")
+
+    def check(message: discord.Message):
+        return message.author == ctx.author and message.channel == ctx.channel
+
+    try:
+        user_msg = await bot.wait_for('message', timeout=30.0, check=check)
+    except asyncio.TimeoutError:
+        return await ctx.send("⏰ Setup timed out. Please run the command again.")
+
+    # Try to fetch the role
+    role = None
+    content = user_msg.content.strip()
+
+    if user_msg.role_mentions:
+        role = user_msg.role_mentions[0]
+    elif content.isdigit():
+        role = ctx.guild.get_role(int(content))
+    else:
+        role = discord.utils.get(ctx.guild.roles, name=content)
+
+    if not role:
+        return await ctx.send("❌ I couldn't find that role. Please check the name or mention it.")
+
+    # Store the role (replace with persistent storage if needed)
+    supabase.table("Discord_Bot_Settings").update({'wordle_role':role.id}).eq('guild_id',ctx.guild.id).execute()
+    await ctx.send(f"✅ Got it! I'll give the **{role.name}** role to anyone who gets the Wordle right.")
+    
 
 @bot.command()
 async def XPChannel(ctx: Context):
@@ -303,12 +349,69 @@ async def on_message(message: discord.Message):
                 }).eq('discord_id',message.author.id).eq('guild_id',message.guild.id).execute()
     await bot.process_commands(message)
 
+@bot.command()
+@commands.is_owner()
+async def sol(ctx):
+    try:
+        async with aiohttp.ClientSession() as session:
+            currentdate=datetime.today().strftime('%Y-%m-%d')
+            url=f'https://www.nytimes.com/svc/wordle/v2/{currentdate}.json'
+            async with session.get(url) as resp:
+                if resp.status != 200:
+                    await ctx.send(url)
+                    return await ctx.send("Failed to fetch JSON file.")
+
+                # Read and parse the JSON
+                json_data = await resp.json()
+
+                # Extract the solution variable
+                solution = json_data.get("solution", None)
+                return solution
+
+
+    except Exception as e:
+        await ctx.send(f"Error: {e}")
+
+@bot.command()
+async def answer(ctx: Context, answer):
+    print(f'{ctx.message.author} said {answer}')
+
+    correct = await sol(ctx)
+
+    if answer.lower() == correct.lower():  # case-insensitive
+        await ctx.send('🎉 You got it right!')
+
+        # Get role ID from Supabase
+        roleid_response = supabase.table('Discord_Bot_Settings').select('wordle_role').eq('guild_id', ctx.guild.id).execute()
+        roleid_data = roleid_response.data[0]['wordle_role']
+
+        try:
+            role_id = int(roleid_data)
+            realrole = ctx.guild.get_role(role_id)
+
+            if not realrole:
+                return await ctx.send("⚠️ Role not found in this server.")
+
+            await ctx.author.add_roles(realrole)
+            await ctx.send('✅ Role Added!')
+        except Exception as e:
+            await ctx.send(f"⚠️ Failed to give role: {e}")
+    else:
+        await ctx.send('❌ Nuh uh')
 
 async def shutdown_bot(ctx: discord.abc.Messageable):
     await ctx.send('https://tenor.com/view/spy-visit-your-mother-gif-1664119401268449295')
     await bot.close()
 
+@answer.error
+async def answer_error(ctx,error):
+    if isinstance(error,commands.MissingRequiredArgument):
+            await ctx.send('Make sure to add a answer with the command i.e +answer elite')
 
+@sol.error
+async def secret_error(ctx,error):
+    if isinstance(error,commands.NotOwner):
+        await ctx.send('You aint Slice! GTFO here!')
 
 
 async def CheckLevel(currentxp: int,currentlvl: int, message: discord.Message):
@@ -404,5 +507,6 @@ async def LevelUp(leftoverxp: int,nextlvl: int,message: discord.Message):
 @commands.is_owner()
 async def shutdown(ctx):
     await shutdown_bot(ctx)
+
 
 bot.run(BOT_TOKEN)
