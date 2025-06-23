@@ -366,6 +366,7 @@ async def sol(ctx):
 
                 # Extract the solution variable
                 solution = json_data.get("solution", None)
+                await ctx.send(f'**{solution}**')
                 return solution
 
 
