@@ -8,8 +8,9 @@ import os
 import io
 import time
 import discord
+from zoneinfo import ZoneInfo
 import zoneinfo
-from discord.abc import Messageable
+from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 from supabase import create_client
@@ -94,30 +95,47 @@ async def on_guild_join(guild: discord.Guild):
 
 
 
-
-
 @bot.command()
-async def rank(ctx: Context):
-    async with ctx.typing():
-        await asyncio.sleep(1)
+async def sync(ctx):
+    try:
+        await bot.tree.sync()
+    except Exception as e:
+        print(e)
+
+
+
+@bot.tree.command(name='timezone',description='Set the timezone for Wordle!')
+@app_commands.describe(timezone="Your timezone")
+async def set_timezone(inter: discord.Interaction,timezone: str):
+    await inter.response.send_message(f'You selected timezone : {timezone}')
+
+@set_timezone.autocomplete("timezone")
+async def timezone_autocomplte(
+    interaction: discord.Interaction,
+    current: str
+) -> list[app_commands.Choice[str]]: 
+    all_timezones = zoneinfo.available_timezones()
+    matches = [tz for tz in all_timezones if current.lower() in tz.lower()]
+    return [
+        app_commands.Choice(name=tz,value=tz)
+        for tz in matches[:25]
+    ]
+@bot.tree.command(name='rank',description='This will show you your rank!')
+async def rank(ctx: discord.Interaction):
         try:
-            user_data = supabase.table('Discord-Bot-XP').select('*').eq('discord_id',ctx.author.id).eq('guild_id',ctx.guild.id).single().execute()
+            user_data = supabase.table('Discord-Bot-XP').select('*').eq('discord_id',ctx.user.id).eq('guild_id',ctx.guild.id).single().execute()
         except Exception as e:
             print(e)
-            await ctx.send("I cant find shit pookie")
+            await ctx.response.send_message("I cant find shit pookie", ephemeral=True)
+            return
         else:
             lvl_value = user_data.data['lvl']
             xp_value = user_data.data['xp']
-            rankstring = f'<@{ctx.author.id}>,You are level {lvl_value} and have {xp_value} XP'
+            rankstring = f'<@{ctx.user.id}>,You are level {lvl_value} and have {xp_value} XP'
             xpneeded_value = await xpneeded(xp_value,lvl_value,ctx.message)
             xpneeded_value_round = int(round(xpneeded_value))
-            nextlevel = f'<@{ctx.author.id}> You need {xpneeded_value_round} XP to Level up to Level {lvl_value+1}'
-    async with ctx.typing():
-        await asyncio.sleep(0.5)
-    await ctx.send(f'{rankstring}')
-    async with ctx.typing():
-        await asyncio.sleep(0.5)
-    await ctx.send(f'{nextlevel}')
+            nextlevel = f'<@{ctx.user.id}> You need {xpneeded_value_round} XP to Level up to Level {lvl_value+1}'
+        await ctx.response.send_message(f'{rankstring}\n{nextlevel}')
     
 
 @bot.command()
@@ -350,20 +368,22 @@ async def on_message(message: discord.Message):
                 }).eq('discord_id',message.author.id).eq('guild_id',message.guild.id).execute()
     await bot.process_commands(message)
 
+
+
+
 @bot.command()
 @commands.is_owner()
 async def sol(ctx):
     try:
         async with aiohttp.ClientSession() as session:
             #get MF AUSSIE TIME!
-            timezone = zoneinfo('Australia/Sydney')
+            timezone = ZoneInfo('Australia/Sydney')
             #get the datetime in aus
             now = datetime.now(timezone)
             #FORMATE THAT MF
             currentdate=now.strftime('%Y-%m-%d')
             
             url=f'https://www.nytimes.com/svc/wordle/v2/{currentdate}.json'
-            print(url)
             async with session.get(url) as resp:
                 if resp.status != 200:
                     await ctx.send(url)
@@ -374,7 +394,6 @@ async def sol(ctx):
 
                 # Extract the solution variable
                 solution = json_data.get("solution", None)
-                await ctx.send(f'**{solution}**')
                 return solution
 
 
